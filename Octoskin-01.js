@@ -1,0 +1,61 @@
+// Firefly-style pulse-coupled oscillators on a grid
+
+const cols = 40;
+const rows = 40;
+const spacing = 15;
+
+let points = [];
+
+function setup() {
+  createCanvas(cols * spacing, rows * spacing);
+  noStroke();
+
+  // Initialize grid of oscillators
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      points.push({
+        x: i * spacing + spacing / 2,
+        y: j * spacing + spacing / 2,
+        phase: random(),          // random starting phase
+        freq: 0.015 + random(0.005), // small variability
+        flashTimer: 0
+      });
+    }
+  }
+}
+
+function draw() {
+  background(10);
+
+  // One update step for all oscillators
+  for (let p of points) {
+    p.phase += p.freq;
+
+    if (p.phase >= 1) {
+      p.phase = 0;
+      p.flashTimer = 1;
+
+      // local coupling: push neighbors within radius
+      const radius = spacing * 2;
+      for (let q of points) {
+        if (p === q) continue;
+        let d = dist(p.x, p.y, q.x, q.y);
+        if (d < radius) {
+          q.phase += 0.05; // coupling strength
+          if (q.phase >= 1) q.phase = 0;
+        }
+      }
+    }
+
+    // fade flash
+    p.flashTimer *= 0.92;
+  }
+
+  // draw
+  for (let p of points) {
+    const base = 80;
+    const flash = p.flashTimer * 255;
+    fill(base + flash);
+    ellipse(p.x, p.y, 6, 6);
+  }
+}
