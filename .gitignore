@@ -1,0 +1,5 @@
+# Ignore dependency folders
+node_modules/
+.DS_Store
+dist/
+build/
