@@ -1,13 +1,18 @@
 <style>
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #111; /* Or #fff depending on your canvas background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;          /* Forces the body to match screen height */
+  }
+
   canvas {
-    display: block;
-    max-width: 900px;       /* Enforces a hard upper limit on width */
-    max-height: 600px;      /* Enforces a hard upper limit on height */
-    width: 100% !important;  /* Allows it to scale down nicely on smaller screens */
-    height: auto !important; /* Maintains the native aspect ratio */
-    margin: 40px auto;      /* Centers the sketch perfectly horizontally */
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Optional: adds a subtle depth */
-    border-radius: 8px;     /* Optional: rounds off the canvas edges */
+    max-width: 90vw;        /* Keeps the canvas at a max of 90% of screen width */
+    max-height: 85vh;       /* Keeps the canvas at a max of 85% of screen height */
+    object-fit: contain;    /* Tells the browser to preserve its internal proportions */
   }
 </style>
 <canvas id="c" style="display:block;width:100%;border-radius:10px;cursor:crosshair;"></canvas>
