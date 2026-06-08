@@ -1,87 +1,297 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Octopus Skin Simulations</title>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-    
-    <style>
-        body {
-            font-family: 'Open Sans', sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            background-color: #f9f9f9;
-        }
-        h1 {
-            font-size: 32px;
-            font-weight: 600;
-            color: #111;
-            margin-bottom: 10px;
-        }
-        p.subtitle {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 40px;
-        }
-        .sketch-list {
-            list-style: none;
-            padding: 0;
-        }
-        .sketch-item {
-            background: #fff;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-radius: 6px;
-            border: 1px solid #eee;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .sketch-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        .sketch-link {
-            font-size: 20px;
-            font-weight: 600;
-            color: #0066cc;
-            text-decoration: none;
-        }
-        .sketch-link:hover {
-            text-decoration: underline;
-        }
-        .description {
-            font-size: 14px;
-            color: #555;
-            margin-top: 5px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Octopus Skin — Suncana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0c0e11;
+    --surface:  #13161b;
+    --border:   rgba(255,255,255,0.07);
+    --text:     #e6e2d9;
+    --muted:    rgba(230,226,217,0.42);
+    --teal:     #4ecdc4;
+    --amber:    #c9942a;
+    --font:     'DM Sans', system-ui, sans-serif;
+    --mono:     'DM Mono', monospace;
+  }
+
+  html { background: var(--bg); }
+
+  body {
+    font-family: var(--font);
+    font-weight: 300;
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── layout ── */
+  .wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 72px 28px 96px;
+  }
+
+  /* ── header ── */
+  .kicker {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .kicker::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  h1 {
+    font-size: clamp(30px, 6vw, 48px);
+    font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 14px;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  .subtitle {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.75;
+    max-width: 480px;
+    margin-bottom: 64px;
+  }
+
+  /* ── sketch list ── */
+  .sketch-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .sketch-item {
+    position: relative;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    transition: background 0.18s, border-color 0.18s;
+    overflow: hidden;
+  }
+  .sketch-item:hover {
+    background: var(--surface);
+    border-color: rgba(255,255,255,0.14);
+  }
+  /* hover accent bar */
+  .sketch-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--teal);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform 0.22s ease;
+  }
+  .sketch-item:hover::before { transform: scaleY(1); }
+
+  .sketch-link {
+    display: block;
+    padding: 22px 28px;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .sketch-header {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 6px;
+  }
+
+  .sketch-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .sketch-title {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--text);
+    transition: color 0.15s;
+  }
+  .sketch-item:hover .sketch-title { color: #fff; }
+
+  .sketch-arrow {
+    margin-left: auto;
+    font-size: 14px;
+    color: var(--muted);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.15s, transform 0.15s;
+    flex-shrink: 0;
+  }
+  .sketch-item:hover .sketch-arrow {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .sketch-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+    padding-left: calc(10px + 14px); /* align with title */
+  }
+
+  /* tags */
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+    padding-left: calc(10px + 14px);
+  }
+  .tag {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.05);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .tag.teal  { color: var(--teal);  border-color: rgba(78,205,196,0.25); background: rgba(78,205,196,0.06); }
+  .tag.amber { color: var(--amber); border-color: rgba(201,148,42,0.25); background: rgba(201,148,42,0.06); }
+
+  /* ── footer ── */
+  footer {
+    margin-top: 80px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  footer p {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  footer a {
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1px;
+    transition: border-color 0.15s;
+  }
+  footer a:hover { border-color: var(--text); }
+</style>
 </head>
 <body>
+<div class="wrap">
 
-    <h1>Octopus Skin Experiments</h1>
-    <p class="subtitle">A repository of generative WebGL algorithms, reaction-diffusion simulations, and chromatophore mechanics.</p>
+  <p class="kicker">Creative coding — work in progress</p>
 
-    <ul class="sketch-list">
-        
-        <li class="sketch-item">
-            <a class="sketch-link" href="./01-Octoskin/index.html">Simulation Version 01</a>
-            <div class="description">Gray-Scott Reaction-Diffusion model core workflow with canvas rendering loop.</div>
-        </li>
-        
-        <li class="sketch-item">
-            <a class="sketch-link" href="./08-Octoskin/squid_skin_v8.html">Simulation Version 08</a>
-            <div class="description">Excitable medium propagation with custom wave controls.</div>
-        </li>
-        
-         <li class="sketch-item">
-            <a class="sketch-link" href="./09-Octoskin/index.html">Simulation Version 09</a>
-            <div class="description">Excitable medium propagation with custom wave controls.</div>
-        </li>
+  <h1>Octopus skin<br><em>experiments</em></h1>
 
-    </ul>
+  <p class="subtitle">
+    A series of generative sketches exploring chromatophore mechanics,
+    reaction-diffusion pattern formation, and excitable media —
+    all running live in the browser.
+  </p>
 
+  <ul class="sketch-list">
+
+    <li class="sketch-item">
+      <a class="sketch-link" href="./01-Octoskin/index.html">
+        <div class="sketch-header">
+          <span class="sketch-num">01</span>
+          <span class="sketch-title">Gray-Scott core</span>
+          <span class="sketch-arrow">→</span>
+        </div>
+        <p class="sketch-desc">
+          Foundational reaction-diffusion model. Two virtual chemicals — activator and inhibitor —
+          diffuse and react to self-organise into organic spot and labyrinth patterns.
+        </p>
+        <div class="tags">
+          <span class="tag teal">Gray-Scott RD</span>
+          <span class="tag">Canvas 2D</span>
+        </div>
+      </a>
+    </li>
+
+    <li class="sketch-item">
+      <a class="sketch-link" href="./08-Octoskin/index.html">
+        <div class="sketch-header">
+          <span class="sketch-num">08</span>
+          <span class="sketch-title">Excitable medium — wave propagation</span>
+          <span class="sketch-arrow">→</span>
+        </div>
+        <p class="sketch-desc">
+          Each cell fires when a neighbour exceeds a threshold, then enters refractory silence.
+          Produces travelling circular wavefronts that annihilate on collision —
+          closely matching how expansion signals spread across a real squid's mantle.
+        </p>
+        <div class="tags">
+          <span class="tag amber">Excitable medium</span>
+          <span class="tag teal">Gray-Scott RD</span>
+          <span class="tag">Wave controls</span>
+        </div>
+      </a>
+    </li>
+
+    <li class="sketch-item">
+      <a class="sketch-link" href="./09-Octoskin/index.html">
+        <div class="sketch-header">
+          <span class="sketch-num">09</span>
+          <span class="sketch-title">Pointillist skin — iridescent layers</span>
+          <span class="sketch-arrow">→</span>
+        </div>
+        <p class="sketch-desc">
+          Hex-packed chromatophores, xanthophores, and erythrophores over a live
+          iridescent background driven by a second slow RD field.
+          Three simulations running simultaneously — closer to the macro photography reference.
+        </p>
+        <div class="tags">
+          <span class="tag amber">Excitable medium</span>
+          <span class="tag teal">Dual RD fields</span>
+          <span class="tag">Hex grid</span>
+          <span class="tag">Pointillist</span>
+        </div>
+      </a>
+    </li>
+
+  </ul>
+
+  <footer>
+    <p>Suncana Gaillot — <a href="https://suncana.co" target="_blank">suncana.co</a></p>
+    <p>Made with <a href="https://claude.ai" target="_blank">Claude Sonnet 4.6</a></p>
+  </footer>
+
+</div>
 </body>
 </html>
