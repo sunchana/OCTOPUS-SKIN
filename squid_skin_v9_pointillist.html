@@ -1,0 +1,330 @@
+
+<canvas id="c" style="display:block;width:100%;border-radius:10px;cursor:crosshair;"></canvas>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center;">
+  <button onclick="setMode('calm')"  id="m0" style="font-size:12px;padding:5px 13px;border-radius:20px;">😌 Calm</button>
+  <button onclick="setMode('ripple')"id="m1" style="font-size:12px;padding:5px 13px;border-radius:20px;">🌊 Ripple</button>
+  <button onclick="setMode('alarm')" id="m2" style="font-size:12px;padding:5px 13px;border-radius:20px;">⚡ Alarm</button>
+  <button onclick="setMode('hide')"  id="m3" style="font-size:12px;padding:5px 13px;border-radius:20px;">🫥 Fade</button>
+  <button onclick="fullReseed()"     style="font-size:12px;padding:5px 13px;border-radius:20px;margin-left:auto;">↺ Reseed</button>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;">
+  <label style="font-size:12px;color:var(--color-text-secondary);">Wave speed
+    <input type="range" id="rWave" min="0.03" max="1.0" step="0.01" value="0.18" style="width:100%;display:block;margin-top:4px;">
+  </label>
+  <label style="font-size:12px;color:var(--color-text-secondary);">Cell size
+    <input type="range" id="rSize" min="0.5" max="2.5" step="0.1" value="1.0" style="width:100%;display:block;margin-top:4px;">
+  </label>
+  <label style="font-size:12px;color:var(--color-text-secondary);">Iridescence
+    <input type="range" id="rIrid" min="0" max="1" step="0.05" value="0.55" style="width:100%;display:block;margin-top:4px;">
+  </label>
+</div>
+<p style="font-size:11px;color:var(--color-text-secondary);margin-top:8px;margin-bottom:0;">Click or drag to seed reaction-diffusion waves outward</p>
+
+<script>
+const CV = document.getElementById('c');
+const W = 520, H = 520;
+CV.width = W; CV.height = H;
+const ctx = CV.getContext('2d');
+
+// ── Gray-Scott RD ── drives wave texture + cell activation ─────────────────
+const RW = 160, RH = 160, RN = RW * RH;
+let rdA = new Float32Array(RN).fill(1);
+let rdB = new Float32Array(RN).fill(0);
+let rdnA= new Float32Array(RN);
+let rdnB= new Float32Array(RN);
+// second slower RD for background iridescence
+const BW = 80, BH = 80, BN = BW * BH;
+let bgA = new Float32Array(BN).fill(1);
+let bgB = new Float32Array(BN).fill(0);
+let bgnA= new Float32Array(BN);
+let bgnB= new Float32Array(BN);
+
+function seedGrid(A, B, gw, gh, n) {
+  A.fill(1); B.fill(0);
+  for (let s = 0; s < n; s++) {
+    const cx = (Math.random()*gw)|0, cy = (Math.random()*gh)|0;
+    const r = 1 + (Math.random()*3|0);
+    for (let dy=-r;dy<=r;dy++) for (let dx=-r;dx<=r;dx++) {
+      const x=((cx+dx)%gw+gw)%gw, y=((cy+dy)%gh+gh)%gh;
+      B[y*gw+x]=1; A[y*gw+x]=0;
+    }
+  }
+}
+
+function rdStepGrid(A, B, nA2, nB2, gw, gh, f, k) {
+  const dA=0.21, dB=0.105;
+  for (let y=0;y<gh;y++) for (let x=0;x<gw;x++) {
+    const i=y*gw+x;
+    const l=y*gw+((x-1+gw)%gw), r2=y*gw+((x+1)%gw);
+    const u=((y-1+gh)%gh)*gw+x, d=((y+1)%gh)*gw+x;
+    const lapA=A[l]+A[r2]+A[u]+A[d]-4*A[i];
+    const lapB=B[l]+B[r2]+B[u]+B[d]-4*B[i];
+    const a=A[i],b=B[i],react=a*b*b;
+    nA2[i]=Math.max(0,Math.min(1,a+dA*lapA-react+f*(1-a)));
+    nB2[i]=Math.max(0,Math.min(1,b+dB*lapB+react-(f+k)*b));
+  }
+  A.set(nA2); B.set(nB2);
+}
+
+// ── Excitable medium (isotropic 8-nbr) ────────────────────────────────────
+const EW=180, EH=180, EN=EW*EH;
+let exc  = new Float32Array(EN);
+let refr = new Float32Array(EN);
+let etmp = new Float32Array(EN);
+let rtmp = new Float32Array(EN);
+
+const MODES = {
+  calm:  {f:0.035,k:0.065, thresh:0.62, decay:0.93, refDecay:0.89, spark:0.010, expandMax:0.60},
+  ripple:{f:0.055,k:0.062, thresh:0.42, decay:0.89, refDecay:0.84, spark:0.030, expandMax:0.85},
+  alarm: {f:0.046,k:0.063, thresh:0.26, decay:0.84, refDecay:0.78, spark:0.060, expandMax:1.0 },
+  hide:  {f:0.022,k:0.051, thresh:0.80, decay:0.97, refDecay:0.95, spark:0.003, expandMax:0.15},
+};
+let curMode = MODES.calm;
+let waveSpeed = 0.18, cellSize = 1.0, iridAmt = 0.55;
+let excAcc = 0;
+
+function setMode(m) {
+  curMode = MODES[m];
+  ['m0','m1','m2','m3'].forEach(id => {
+    const e=document.getElementById(id); e.style.fontWeight='400'; e.style.background=''; e.style.color='';
+  });
+  const map={calm:'m0',ripple:'m1',alarm:'m2',hide:'m3'};
+  const e=document.getElementById(map[m]);
+  e.style.fontWeight='600'; e.style.background='var(--color-text-primary)'; e.style.color='var(--color-bg-primary)';
+}
+setMode('calm');
+document.getElementById('rWave').oninput =e=>waveSpeed=+e.target.value;
+document.getElementById('rSize').oninput =e=>{ cellSize=+e.target.value; buildCells(); };
+document.getElementById('rIrid').oninput =e=>iridAmt=+e.target.value;
+
+// ── Pointillist cell grid ──────────────────────────────────────────────────
+// Pack cells tightly in a jittered hex grid — like real chromatophore layouts
+let cells = [];
+function buildCells() {
+  cells = [];
+  const spacing = 9 * cellSize;
+  const rows = Math.ceil(H / (spacing * 0.866)) + 2;
+  const cols = Math.ceil(W / spacing) + 2;
+  for (let row = -1; row < rows; row++) {
+    for (let col = -1; col < cols; col++) {
+      const xOff = (row % 2) * spacing * 0.5;
+      const cx = col * spacing + xOff + (Math.random()-0.5)*spacing*0.35;
+      const cy = row * spacing * 0.866 + (Math.random()-0.5)*spacing*0.35;
+      if (cx < -spacing || cx > W+spacing || cy < -spacing || cy > H+spacing) continue;
+      // Assign type based on local random — gives natural clustering
+      const rnd = Math.random();
+      let type, baseR;
+      if (rnd < 0.12) {
+        type = 'large'; baseR = (5.5 + Math.random()*4.5) * cellSize;
+      } else if (rnd < 0.55) {
+        type = 'medium'; baseR = (2.8 + Math.random()*2.5) * cellSize;
+      } else if (rnd < 0.88) {
+        type = 'small'; baseR = (1.2 + Math.random()*1.8) * cellSize;
+      } else {
+        type = 'red'; baseR = (0.8 + Math.random()*1.4) * cellSize;
+      }
+      // smooth shape coefficients (low harmonics only, no tri artefact)
+      const a1=(Math.random()-0.5)*0.28, p1=Math.random()*Math.PI*2;
+      const a2=(Math.random()-0.5)*0.14, p2=Math.random()*Math.PI*2;
+      cells.push({ x:cx, y:cy, baseR, type, phase:Math.random()*Math.PI*2, a1,p1,a2,p2 });
+    }
+  }
+}
+
+// ── Seed ───────────────────────────────────────────────────────────────────
+function fullReseed() {
+  seedGrid(rdA,rdB,RW,RH,280);
+  seedGrid(bgA,bgB,BW,BH,120);
+  exc.fill(0); refr.fill(0);
+  buildCells();
+  for (let i=0;i<8;i++) {
+    const x=(Math.random()*EW)|0, y=(Math.random()*EH)|0;
+    exc[y*EW+x]=1.0;
+  }
+}
+fullReseed();
+
+// ── Input ──────────────────────────────────────────────────────────────────
+function canvasXY(cx,cy) {
+  const r=CV.getBoundingClientRect();
+  return [(cx-r.left)*(W/r.width),(cy-r.top)*(H/r.height)];
+}
+function inject(wx,wy) {
+  // inject into excitable medium
+  const ex=Math.min(EW-1,Math.max(0,(wx/W*EW)|0));
+  const ey=Math.min(EH-1,Math.max(0,(wy/H*EH)|0));
+  const er=16;
+  for (let dy=-er;dy<=er;dy++) for (let dx=-er;dx<=er;dx++) {
+    if (dx*dx+dy*dy>er*er) continue;
+    const x=((ex+dx)%EW+EW)%EW, y=((ey+dy)%EH+EH)%EH;
+    if (refr[y*EW+x]<0.05) exc[y*EW+x]=1.0;
+  }
+  // also seed RD B field for a structural wave
+  const rx=Math.min(RW-1,Math.max(0,(wx/W*RW)|0));
+  const ry=Math.min(RH-1,Math.max(0,(wy/H*RH)|0));
+  const rr=10;
+  for (let dy=-rr;dy<=rr;dy++) for (let dx=-rr;dx<=rr;dx++) {
+    if (dx*dx+dy*dy>rr*rr) continue;
+    const x=((rx+dx)%RW+RW)%RW, y=((ry+dy)%RH+RH)%RH;
+    rdB[y*RW+x]=Math.min(1,rdB[y*RW+x]+0.8);
+    rdA[y*RW+x]=Math.max(0,rdA[y*RW+x]-0.5);
+  }
+}
+let dragging=false;
+CV.addEventListener('mousedown',e=>{ dragging=true; const[x,y]=canvasXY(e.clientX,e.clientY); inject(x,y); });
+CV.addEventListener('mousemove',e=>{ if(dragging){ const[x,y]=canvasXY(e.clientX,e.clientY); inject(x,y); }});
+window.addEventListener('mouseup',()=>dragging=false);
+CV.addEventListener('touchstart',e=>{ e.preventDefault(); const[x,y]=canvasXY(e.touches[0].clientX,e.touches[0].clientY); inject(x,y); },{passive:false});
+CV.addEventListener('touchmove', e=>{ e.preventDefault(); const[x,y]=canvasXY(e.touches[0].clientX,e.touches[0].clientY); inject(x,y); },{passive:false});
+
+// ── Excitable step ─────────────────────────────────────────────────────────
+function excStep() {
+  const {thresh,decay,refDecay,spark} = curMode;
+  const ns = Math.ceil(spark*6);
+  for (let i=0;i<ns;i++) {
+    const x=(Math.random()*EW)|0, y=(Math.random()*EH)|0;
+    if (refr[y*EW+x]<0.05) exc[y*EW+x]=1.0;
+  }
+  for (let y=0;y<EH;y++) for (let x=0;x<EW;x++) {
+    const i=y*EW+x;
+    const l=y*EW+((x-1+EW)%EW), r2=y*EW+((x+1)%EW);
+    const u=((y-1+EH)%EH)*EW+x,  d=((y+1)%EH)*EW+x;
+    const ul=((y-1+EH)%EH)*EW+((x-1+EW)%EW), ur=((y-1+EH)%EH)*EW+((x+1)%EW);
+    const dl=((y+1)%EH)*EW+((x-1+EW)%EW),    dr=((y+1)%EH)*EW+((x+1)%EW);
+    const cMax=Math.max(exc[l],exc[r2],exc[u],exc[d]);
+    const dMax=Math.max(exc[ul],exc[ur],exc[dl],exc[dr])*0.707;
+    const nMax=Math.max(cMax,dMax);
+    // RD B modulates threshold — wave breaks organically
+    const rx=Math.min(RW-1,(x/EW*RW)|0), ry=Math.min(RH-1,(y/EH*RH)|0);
+    const rdMod=rdB[ry*RW+rx]*0.15;
+    let s=exc[i];
+    if (s<thresh && nMax>thresh+rdMod && refr[i]<0.05) s=0.9+Math.random()*0.1;
+    etmp[i]=s*decay;
+    rtmp[i]=Math.max(0,(refr[i]+(s>0.5?0.045:0))*refDecay);
+  }
+  exc.set(etmp); refr.set(rtmp);
+}
+
+// ── Sample helpers ─────────────────────────────────────────────────────────
+function sampleExc(wx,wy) {
+  const gx=Math.min(EW-1,Math.max(0,(wx/W*EW)|0));
+  const gy=Math.min(EH-1,Math.max(0,(wy/H*EH)|0));
+  return exc[gy*EW+gx];
+}
+function sampleRdB(wx,wy) {
+  const gx=Math.min(RW-1,Math.max(0,(wx/W*RW)|0));
+  const gy=Math.min(RH-1,Math.max(0,(wy/H*RH)|0));
+  return rdB[gy*RW+gx];
+}
+function sampleBgB(wx,wy) {
+  const gx=Math.min(BW-1,Math.max(0,(wx/W*BW)|0));
+  const gy=Math.min(BH-1,Math.max(0,(wy/H*BH)|0));
+  return bgB[gy*BW+gx];
+}
+
+// ── Background: pixel-level iridescent field from slow RD ─────────────────
+const imgData = ctx.createImageData(W,H);
+function drawBackground() {
+  const d = imgData.data;
+  const ir = iridAmt;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++) {
+    const i=(y*W+x)*4;
+    const gx=Math.min(BW-1,(x*(BW/W))|0);
+    const gy=Math.min(BH-1,(y*(BH/H))|0);
+    const b=bgB[gy*BW+gx];
+    const a=bgA[gy*BW+gx];
+    const ex=sampleExc(x,y)*0.5;
+    // blue-lavender base; teal shimmer where bgB is high; brighter where excited
+    const rv = (118 + b*ir*35  + a*12  + ex*40)|0;
+    const gv = (148 + b*ir*110 + a*8   + ex*60)|0;
+    const bv = (200 + b*ir*30  - a*18  + ex*20)|0;
+    d[i]  =Math.min(255,Math.max(0,rv));
+    d[i+1]=Math.min(255,Math.max(0,gv));
+    d[i+2]=Math.min(255,Math.max(0,bv));
+    d[i+3]=255;
+  }
+  ctx.putImageData(imgData,0,0);
+}
+
+// ── Draw cells ─────────────────────────────────────────────────────────────
+function drawCells() {
+  const em = curMode.expandMax;
+  cells.forEach(c => {
+    const s  = sampleExc(c.x, c.y);
+    const rd = sampleRdB(c.x, c.y);
+    // base presence — cells always slightly visible, swell with excitation
+    const presence = 0.18 + rd*0.25 + s*em*0.57;
+    const r = c.baseR * Math.min(1.0, presence);
+    if (r < 0.35) return;
+
+    if (c.type === 'large') {
+      // Dark brown chromatophore — organic blob shape, soft edge
+      ctx.beginPath();
+      const steps=16;
+      for (let k=0;k<=steps;k++) {
+        const ang=(k/steps)*Math.PI*2;
+        const wobble=1+c.a1*Math.sin(ang+c.p1)+c.a2*Math.sin(2*ang+c.p2);
+        const rr=r*Math.max(0.65,wobble);
+        const px=c.x+Math.cos(ang)*rr, py=c.y+Math.sin(ang)*rr*0.93;
+        k===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+      }
+      ctx.closePath();
+      const g=ctx.createRadialGradient(c.x,c.y,r*0.05,c.x,c.y,r);
+      const bright=(s+rd);
+      g.addColorStop(0,`rgba(10,4,1,0.98)`);
+      g.addColorStop(0.38,`rgba(${(48+bright*40)|0},${(22+bright*15)|0},4,0.95)`);
+      g.addColorStop(0.75,`rgba(${(70+bright*35)|0},${(35+bright*12)|0},7,0.72)`);
+      g.addColorStop(1,`rgba(55,28,5,0)`);
+      ctx.fillStyle=g; ctx.fill();
+
+    } else if (c.type === 'medium') {
+      // Yellow-green xanthophore — the dominant colour in the reference
+      ctx.beginPath(); ctx.arc(c.x,c.y,r,0,Math.PI*2);
+      // colour shifts: warm gold in cluster centres, lime-yellow at edges
+      const warmth=sampleRdB(c.x,c.y);
+      const rVal=(190+warmth*35+s*20)|0;
+      const gVal=(185+warmth*20+s*25)|0;
+      const bVal=(20+warmth*10)|0;
+      ctx.fillStyle=`rgba(${Math.min(255,rVal)},${Math.min(255,gVal)},${bVal},${0.78+s*0.18})`;
+      ctx.fill();
+      // subtle dark centre like the reference
+      if (r>2.5) {
+        ctx.beginPath(); ctx.arc(c.x,c.y,r*0.32,0,Math.PI*2);
+        ctx.fillStyle=`rgba(30,14,3,${0.55+s*0.25})`; ctx.fill();
+      }
+
+    } else if (c.type === 'small') {
+      // tiny dark dots — pepper
+      ctx.beginPath(); ctx.arc(c.x,c.y,r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(18,8,2,${0.65+s*0.30})`; ctx.fill();
+
+    } else {
+      // red erythrophores
+      ctx.beginPath(); ctx.arc(c.x,c.y,r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(210,22,60,${0.72+s*0.25})`; ctx.fill();
+    }
+  });
+}
+
+// ── Loop ───────────────────────────────────────────────────────────────────
+let lastTs=0;
+function loop(ts) {
+  const dt=Math.min((ts-lastTs)/1000,0.05);
+  lastTs=ts;
+
+  // RD steps: fast grid for cell activation texture
+  for (let i=0;i<4;i++) rdStepGrid(rdA,rdB,rdnA,rdnB,RW,RH,curMode.f,curMode.k);
+  // slow background iridescence RD
+  for (let i=0;i<2;i++) rdStepGrid(bgA,bgB,bgnA,bgnB,BW,BH,0.029,0.057);
+
+  // excitable medium — fractional accumulation for smooth slow speeds
+  excAcc+=waveSpeed*3.5;
+  const steps=Math.floor(excAcc); excAcc-=steps;
+  for (let i=0;i<steps;i++) excStep();
+
+  drawBackground();
+  drawCells();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
