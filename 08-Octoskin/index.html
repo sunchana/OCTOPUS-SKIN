@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cephalopod Skin — Suncana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d0f12;
+    --surface:   #14171c;
+    --border:    rgba(255,255,255,0.08);
+    --text:      #e8e4dc;
+    --muted:     rgba(232,228,220,0.45);
+    --accent:    #e8e4dc;
+    --font:      'DM Sans', system-ui, sans-serif;
+    --mono:      'DM Mono', monospace;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-weight: 300;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 660px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── header ── */
+  .kicker {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: clamp(26px, 5vw, 38px);
+    font-weight: 300;
+    line-height: 1.15;
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 32px;
+    font-style: italic;
+  }
+
+  /* ── canvas ── */
+  #c {
+    display: block;
+    width: 100%;
+    border-radius: 6px;
+    cursor: crosshair;
+    border: 1px solid var(--border);
+  }
+
+  /* ── controls ── */
+  .controls {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .mode-btn {
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .mode-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+  .mode-btn.active {
+    color: var(--bg);
+    background: var(--text);
+    border-color: var(--text);
+    font-weight: 500;
+  }
+
+  .reseed-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 5px 12px;
+    cursor: pointer;
+    margin-left: auto;
+    letter-spacing: 0.05em;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .reseed-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+
+  .sliders {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 480px) { .sliders { grid-template-columns: 1fr 1fr; } }
+
+  .slider-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--text);
+    border: none;
+    transition: transform 0.1s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+  input[type=range]::-moz-range-thumb {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--text);
+    border: none;
+  }
+
+  .hint {
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+
+  /* ── about ── */
+  .about {
+    margin-top: 56px;
+    border-top: 1px solid var(--border);
+    padding-top: 40px;
+  }
+  .about p {
+    font-size: 14px;
+    line-height: 1.85;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .about p:last-child { margin-bottom: 0; }
+  .about strong { color: var(--text); font-weight: 400; }
+  .about a {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--border);
+    transition: text-decoration-color 0.15s;
+  }
+  .about a:hover { text-decoration-color: var(--text); }
+
+  .meta {
+    margin-top: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .meta-item dt {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .meta-item dd {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 300;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">Creative coding — work in progress</p>
+  <h1>Cephalopod skin</h1>
+  <p class="subtitle">A reaction-diffusion simulation</p>
+
+  <canvas id="c"></canvas>
+
+  <div class="controls">
+  <button onclick="setMode('rest')"   id="m0" style="font-size:12px;padding:4px 11px;">💤 Rest</button>
+  <button onclick="setMode('ripple')" id="m1" style="font-size:12px;padding:4px 11px;">🌊 Ripple</button>
+  <button onclick="setMode('alarm')"  id="m2" style="font-size:12px;padding:4px 11px;">⚡ Alarm</button>
+  <button onclick="setMode('freeze')" id="m3" style="font-size:12px;padding:4px 11px;">🧊 Freeze</button>
+  <button onclick="fullReseed()"      style="font-size:12px;padding:4px 11px;margin-left:auto;">↺ Reseed</button>
+  </div>
+
+  <div class="sliders">
+   <label style="font-size:12px;color:var(--color-text-secondary);">Wave speed
+    <input type="range" id="rWave" min="0.05" max="1.2" step="0.01" value="0.25" style="width:100%;display:block;margin-top:3px;">
+  </label>
+  <label style="font-size:12px;color:var(--color-text-secondary);">Density
+    <input type="range" id="rDens" min="100" max="600" step="20" value="300" style="width:100%;display:block;margin-top:3px;">
+  </label>
+  <label style="font-size:12px;color:var(--color-text-secondary);">Expand
+    <input type="range" id="rExpand" min="0.1" max="1" step="0.05" value="0.8" style="width:100%;display:block;margin-top:3px;">
+  </label>
+  </div>
+
+  <p class="hint">— click or drag on the skin to seed reaction-diffusion waves</p>
+
+  <div class="about">
+    <p>
+      I've always been fascinated by the way cephalopod skin moves — the rippling waves of colour, the dots appearing and disappearing. I wanted to try and recreate that in code.
+    </p>
+    <p>
+      I had the idea and the reference images. <strong>Claude did the heavy lifting</strong> — writing the simulation code, debugging it, and iterating toward something that actually looks like squid skin. Under the hood it runs two systems at once: a <strong>reaction-diffusion algorithm</strong> that generates the organic background texture, and an <strong>excitable medium</strong> that propagates waves across the surface the way nerve signals actually travel through a squid's mantle.
+    </p>
+    <p>
+      This is a living experiment — I'll keep pushing it further.
+    </p>
+
+    <dl class="meta">
+      <div class="meta-item"><dt>Technique</dt><dd>Gray-Scott RD + excitable medium, Canvas 2D</dd></div>
+      <div class="meta-item"><dt>Interaction</dt><dd>Click or drag to inject wavefronts</dd></div>
+      <div class="meta-item"><dt>Reference</dt><dd><em>Loligo vulgaris</em> — macro photography</dd></div>
+      <div class="meta-item"><dt>Made with</dt><dd><a href="https://claude.ai" target="_blank">Claude Sonnet 4.6</a></dd></div>
+    </dl>
+  </div>
+
+</div>
+
+<script>
+const CV = document.getElementById('c');
+const W = 500, H = 500;
+CV.width = W; CV.height = H;
+const ctx = CV.getContext('2d');
+
+// ── Gray-Scott RD ──────────────────────────────────────────────────────────
+const RW=100, RH=100, RN=RW*RH;
+let rdA=new Float32Array(RN).fill(1), rdB=new Float32Array(RN).fill(0);
+let rdnA=new Float32Array(RN), rdnB=new Float32Array(RN);
+
+function seedRD(){
+  rdA.fill(1); rdB.fill(0);
+  for(let s=0;s<200;s++){
+    const cx=(Math.random()*RW)|0, cy=(Math.random()*RH)|0, r=1+(Math.random()*2|0);
+    for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){
+      const x=((cx+dx)%RW+RW)%RW, y=((cy+dy)%RH+RH)%RH;
+      rdB[y*RW+x]=1; rdA[y*RW+x]=0;
+    }
+  }
+}
+seedRD();
+
+function rdStep(){
+  const f=0.055,k=0.062,dA=0.21,dB=0.105;
+  for(let y=0;y<RH;y++) for(let x=0;x<RW;x++){
+    const i=y*RW+x;
+    const l=y*RW+((x-1+RW)%RW),r2=y*RW+((x+1)%RW);
+    const u=((y-1+RH)%RH)*RW+x, d=((y+1)%RH)*RW+x;
+    const lapA=rdA[l]+rdA[r2]+rdA[u]+rdA[d]-4*rdA[i];
+    const lapB=rdB[l]+rdB[r2]+rdB[u]+rdB[d]-4*rdB[i];
+    const a=rdA[i],b=rdB[i],react=a*b*b;
+    rdnA[i]=Math.max(0,Math.min(1,a+dA*lapA-react+f*(1-a)));
+    rdnB[i]=Math.max(0,Math.min(1,b+dB*lapB+react-(f+k)*b));
+  }
+  rdA.set(rdnA); rdB.set(rdnB);
+}
+
+// ── Excitable medium ───────────────────────────────────────────────────────
+const EW=180,EH=180,EN=EW*EH;
+let exc=new Float32Array(EN), ref2=new Float32Array(EN);
+let etmp=new Float32Array(EN), rtmp=new Float32Array(EN);
+
+const MODES={
+  rest:  {thresh:0.70,decay:0.94,refDecay:0.90,refAdd:0.55,spark:0.008,expandMax:0.25},
+  ripple:{thresh:0.45,decay:0.90,refDecay:0.85,refAdd:0.50,spark:0.025,expandMax:0.80},
+  alarm: {thresh:0.28,decay:0.85,refDecay:0.80,refAdd:0.42,spark:0.055,expandMax:1.0 },
+  freeze:{thresh:0.88,decay:0.97,refDecay:0.95,refAdd:0.80,spark:0.002,expandMax:0.08},
+};
+let curMode=MODES.ripple, waveSpeed=0.25, expandAmount=0.8, numCells=300;
+
+function setMode(m){
+  curMode=MODES[m];
+  ['m0','m1','m2','m3'].forEach(id=>{ const e=document.getElementById(id); e.style.fontWeight='400'; e.style.outline='none'; });
+  const map={rest:'m0',ripple:'m1',alarm:'m2',freeze:'m3'};
+  document.getElementById(map[m]).style.cssText+='font-weight:700;outline:1.5px solid var(--color-text-primary)';
+}
+setMode('ripple');
+document.getElementById('rWave').oninput  =e=>waveSpeed   =+e.target.value;
+document.getElementById('rDens').oninput  =e=>{numCells=+e.target.value;buildCells();};
+document.getElementById('rExpand').oninput=e=>expandAmount=+e.target.value;
+
+// Per-cell smooth organic shape via summed harmonics (no triangle lobes)
+// precompute per cell a radius table at N_ANG angles
+const N_ANG=24;
+function makeShape(baseR){
+  const radii=[];
+  // random smooth blob: sum of low-freq harmonics only
+  const a1=(Math.random()-0.5)*0.22, a2=(Math.random()-0.5)*0.12, a3=(Math.random()-0.5)*0.07;
+  const p1=Math.random()*Math.PI*2, p2=Math.random()*Math.PI*2, p3=Math.random()*Math.PI*2;
+  for(let k=0;k<N_ANG;k++){
+    const ang=(k/N_ANG)*Math.PI*2;
+    const wobble=1 + a1*Math.sin(ang+p1) + a2*Math.sin(2*ang+p2) + a3*Math.sin(3*ang+p3);
+    radii.push(baseR*Math.max(0.6,wobble));
+  }
+  return radii;
+}
+
+// ── Cells ──────────────────────────────────────────────────────────────────
+let cells=[], dotCanvas=null;
+
+function buildCells(){
+  cells=[];
+  const bigN=Math.round(numCells*0.10);
+  for(let i=0;i<bigN;i++){
+    const baseR=16+Math.random()*20;
+    cells.push({x:25+Math.random()*(W-50),y:25+Math.random()*(H-50),
+      baseR, shape:makeShape(1.0), phase:Math.random()*Math.PI*2, type:'large'});
+  }
+  const midN=Math.round(numCells*0.30);
+  for(let i=0;i<midN;i++){
+    cells.push({x:Math.random()*W,y:Math.random()*H,
+      baseR:5+Math.random()*9, shape:null, phase:Math.random()*Math.PI*2, type:'medium'});
+  }
+  const smN=Math.round(numCells*0.45);
+  for(let i=0;i<smN;i++){
+    cells.push({x:Math.random()*W,y:Math.random()*H,
+      baseR:1.5+Math.random()*3.5, shape:null, phase:Math.random()*Math.PI*2, type:'small'});
+  }
+  // tiny red erythrophores
+  const redN=Math.round(numCells*0.15);
+  for(let i=0;i<redN;i++){
+    cells.push({x:Math.random()*W,y:Math.random()*H,
+      baseR:1+Math.random()*2, shape:null, phase:Math.random()*Math.PI*2, type:'red'});
+  }
+
+  // static background: iridescent blue-lavender from reference image
+  dotCanvas=document.createElement('canvas');
+  dotCanvas.width=W; dotCanvas.height=H;
+  const dc=dotCanvas.getContext('2d');
+  // base: periwinkle/slate blue like squid-skin.jpg
+  dc.fillStyle='#8fa8c8';
+  dc.fillRect(0,0,W,H);
+  // soft organic blobs of slightly different hue to break it up
+  for(let i=0;i<40;i++){
+    const bx=Math.random()*W, by=Math.random()*H, br=40+Math.random()*80;
+    const grad=dc.createRadialGradient(bx,by,0,bx,by,br);
+    grad.addColorStop(0,`rgba(${110+Math.random()*30|0},${130+Math.random()*30|0},${180+Math.random()*40|0},0.25)`);
+    grad.addColorStop(1,'rgba(0,0,0,0)');
+    dc.beginPath(); dc.arc(bx,by,br,0,Math.PI*2);
+    dc.fillStyle=grad; dc.fill();
+  }
+  // tiny pepper dots (very subtle on the blue)
+  for(let i=0;i<numCells*1.5;i++){
+    dc.beginPath();
+    dc.arc(Math.random()*W,Math.random()*H,0.3+Math.random()*0.9,0,Math.PI*2);
+    dc.fillStyle=`rgba(60,40,100,${0.15+Math.random()*0.25})`;
+    dc.fill();
+  }
+}
+
+function fullReseed(){
+  exc.fill(0); ref2.fill(0);
+  seedRD();
+  buildCells();
+  for(let i=0;i<6;i++){ const x=(Math.random()*EW)|0,y=(Math.random()*EH)|0; exc[y*EW+x]=1.0; }
+}
+fullReseed();
+
+// ── Input ──────────────────────────────────────────────────────────────────
+function canvasXY(cx,cy){ const r=CV.getBoundingClientRect(); return [(cx-r.left)*(W/r.width),(cy-r.top)*(H/r.height)]; }
+function inject(wx,wy){
+  const gx=Math.min(EW-1,Math.max(0,(wx/W*EW)|0)), gy=Math.min(EH-1,Math.max(0,(wy/H*EH)|0));
+  const r=14;
+  for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){
+    if(dx*dx+dy*dy>r*r) continue;
+    const x=((gx+dx)%EW+EW)%EW, y=((gy+dy)%EH+EH)%EH;
+    if(ref2[y*EW+x]<0.1) exc[y*EW+x]=1.0;
+  }
+}
+let dragging=false;
+CV.addEventListener('mousedown',e=>{dragging=true;const[x,y]=canvasXY(e.clientX,e.clientY);inject(x,y);});
+CV.addEventListener('mousemove',e=>{if(dragging){const[x,y]=canvasXY(e.clientX,e.clientY);inject(x,y);}});
+window.addEventListener('mouseup',()=>dragging=false);
+CV.addEventListener('touchstart',e=>{e.preventDefault();const[x,y]=canvasXY(e.touches[0].clientX,e.touches[0].clientY);inject(x,y);},{passive:false});
+CV.addEventListener('touchmove', e=>{e.preventDefault();const[x,y]=canvasXY(e.touches[0].clientX,e.touches[0].clientY);inject(x,y);},{passive:false});
+
+// ── Excitable step ─────────────────────────────────────────────────────────
+function excStep(){
+  const{thresh,decay,refDecay,refAdd,spark}=curMode;
+  const nSparks=Math.ceil(spark*8);
+  for(let i=0;i<nSparks;i++){
+    const x=(Math.random()*EW)|0,y=(Math.random()*EH)|0;
+    if(ref2[y*EW+x]<0.05) exc[y*EW+x]=1.0;
+  }
+  for(let y=0;y<EH;y++) for(let x=0;x<EW;x++){
+    const i=y*EW+x;
+    const l=y*EW+((x-1+EW)%EW), r2=y*EW+((x+1)%EW);
+    const u=((y-1+EH)%EH)*EW+x, d=((y+1)%EH)*EW+x;
+    const ul=((y-1+EH)%EH)*EW+((x-1+EW)%EW), ur=((y-1+EH)%EH)*EW+((x+1)%EW);
+    const dl=((y+1)%EH)*EW+((x-1+EW)%EW), dr=((y+1)%EH)*EW+((x+1)%EW);
+    const cardMax=Math.max(exc[l],exc[r2],exc[u],exc[d]);
+    const diagMax=Math.max(exc[ul],exc[ur],exc[dl],exc[dr])*0.707;
+    const nbrMax=Math.max(cardMax,diagMax);
+    const rx=Math.min(RW-1,(x/EW*RW)|0), ry=Math.min(RH-1,(y/EH*RH)|0);
+    const rdMod=rdB[ry*RW+rx]*0.20;
+    let s=exc[i];
+    if(s<thresh && nbrMax>thresh+rdMod && ref2[i]<0.05) s=0.92+Math.random()*0.08;
+    etmp[i]=s*decay;
+    rtmp[i]=Math.max(0,(ref2[i]+(s>0.5?refAdd*0.08:0))*refDecay);
+  }
+  exc.set(etmp); ref2.set(rtmp);
+}
+
+function sampleExc(wx,wy){
+  const gx=Math.min(EW-1,Math.max(0,(wx/W*EW)|0)), gy=Math.min(EH-1,Math.max(0,(wy/H*EH)|0));
+  return exc[gy*EW+gx];
+}
+
+// ── Draw ───────────────────────────────────────────────────────────────────
+function drawCells(){
+  cells.forEach(c=>{
+    const s=sampleExc(c.x,c.y);
+    if(s<0.03) return;
+    const r=c.baseR*(s*expandAmount)+( c.type==='small'?0.7:c.type==='red'?0.5:c.type==='medium'?1.2:2.5 );
+    if(r<0.4) return;
+
+    if(c.type==='large'){
+      // smooth organic blob using precomputed shape radii, scaled by excitation
+      ctx.beginPath();
+      for(let k=0;k<=N_ANG;k++){
+        const ang=(k/N_ANG)*Math.PI*2;
+        const ri=c.shape[k%N_ANG]*r;
+        const px=c.x+Math.cos(ang)*ri, py=c.y+Math.sin(ang)*ri*0.92;
+        k===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+      }
+      ctx.closePath();
+      // dark brown centre fading to amber edge — matching squid-skin.jpg
+      const g=ctx.createRadialGradient(c.x,c.y,r*0.05,c.x,c.y,r*1.05);
+      g.addColorStop(0,'rgba(12,5,1,0.98)');
+      g.addColorStop(0.35,'rgba(55,25,5,0.95)');
+      g.addColorStop(0.70,'rgba(90,48,10,0.80)');
+      g.addColorStop(1,'rgba(80,42,8,0)');
+      ctx.fillStyle=g; ctx.fill();
+
+    } else if(c.type==='medium'){
+      // yellow-green medium cells from reference
+      ctx.beginPath(); ctx.arc(c.x,c.y,r,0,Math.PI*2);
+      const yg=Math.min(255,(160+s*60)|0);
+      ctx.fillStyle=`rgba(${yg},${(yg*0.88)|0},${(20+s*15)|0},${0.82+s*0.15})`;
+      ctx.fill();
+      // small dark centre
+      if(r>3){
+        ctx.beginPath(); ctx.arc(c.x,c.y,r*0.3,0,Math.PI*2);
+        ctx.fillStyle='rgba(20,8,2,0.85)'; ctx.fill();
+      }
+
+    } else if(c.type==='small'){
+      // crisp dark brown dots
+      ctx.beginPath(); ctx.arc(c.x,c.y,r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(22,9,2,${0.75+s*0.22})`;
+      ctx.fill();
+
+    } else {
+      // red erythrophores — magenta-red like reference
+      ctx.beginPath(); ctx.arc(c.x,c.y,r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(210,22,55,${0.7+s*0.28})`;
+      ctx.fill();
+    }
+  });
+}
+
+let t=0,lastTs=0;
+// accumulate fractional steps so slow wave speed still advances
+let excAcc=0;
+
+function loop(ts){
+  const dt=Math.min((ts-lastTs)/1000,0.05);
+  lastTs=ts; t+=dt;
+
+  // RD: 2 steps per frame always (slow texture drift)
+  for(let i=0;i<2;i++) rdStep();
+
+  // Excitable medium: accumulate fractional steps, speed 0.05–1.2 maps to ~0.05–2 steps/frame
+  excAcc+=waveSpeed*2.5;
+  const steps=Math.floor(excAcc);
+  excAcc-=steps;
+  for(let i=0;i<steps;i++) excStep();
+
+  if(dotCanvas) ctx.drawImage(dotCanvas,0,0);
+  else{ ctx.fillStyle='#8fa8c8'; ctx.fillRect(0,0,W,H); }
+  drawCells();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
