@@ -1,4 +1,15 @@
-
+<style>
+  canvas {
+    display: block;
+    max-width: 900px;       /* Enforces a hard upper limit on width */
+    max-height: 600px;      /* Enforces a hard upper limit on height */
+    width: 100% !important;  /* Allows it to scale down nicely on smaller screens */
+    height: auto !important; /* Maintains the native aspect ratio */
+    margin: 40px auto;      /* Centers the sketch perfectly horizontally */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Optional: adds a subtle depth */
+    border-radius: 8px;     /* Optional: rounds off the canvas edges */
+  }
+</style>
 <canvas id="c" style="display:block;width:100%;border-radius:10px;cursor:crosshair;"></canvas>
 <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center;">
   <button onclick="setMode('calm')"  id="m0" style="font-size:12px;padding:5px 13px;border-radius:20px;">😌 Calm</button>
