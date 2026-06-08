@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Octopus Skin Simulations</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 10px;
+        }
+        p.subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 40px;
+        }
+        .sketch-list {
+            list-style: none;
+            padding: 0;
+        }
+        .sketch-item {
+            background: #fff;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .sketch-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .sketch-link {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0066cc;
+            text-decoration: none;
+        }
+        .sketch-link:hover {
+            text-decoration: underline;
+        }
+        .description {
+            font-size: 14px;
+            color: #555;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Octopus Skin Experiments</h1>
+    <p class="subtitle">A repository of generative WebGL algorithms, reaction-diffusion simulations, and chromatophore mechanics.</p>
+
+    <ul class="sketch-list">
+        
+        <li class="sketch-item">
+            <a class="sketch-link" href="./01/index.html">Simulation Version 01</a>
+            <div class="description">Gray-Scott Reaction-Diffusion model core workflow with canvas rendering loop.</div>
+        </li>
+
+        <li class="sketch-item">
+            <a class="sketch-link" href="./08-octoskin/squid%20skin08.html">Simulation Version 08</a>
+            <div class="description">Excitable medium propagation with custom wave controls.</div>
+        </li>
+
+    </ul>
+
+</body>
+</html>
